@@ -88,6 +88,19 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+
+    - name: Set tag reference from input
+      if: github.event.inputs.tag != ''
+      run: |
+        echo "TAG_REF=refs/tags/${{ github.event.inputs.tag}}" >> $GITHUB_ENV
+        echo "TAG_VERSION=${{ github.event.inputs.tag }}" >> $GITHUB_ENV
+
+    - name: Set tag reference from github.ref
+      if: github.event.inputs.tag == ''
+      run: | 
+        echo "TAG_REF=${{ github.ref }}" >> $GITHUB_ENV
+        echo "TAG_VERSION=${TAG_REF#refs/tags/}" >> $GITHUB_ENV
+    
     - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
