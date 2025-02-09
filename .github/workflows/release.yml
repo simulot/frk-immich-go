@@ -74,9 +74,10 @@ jobs:
     - name: Create checksums
       run: |
         set checksums=$(pwd)/checksums.txt
+        echo $checksums 
         for dir in artifacts/immich-go*; do
             pushd $dir
-            md5sum *  >> $checksums
+            md5sum *  >> ${checksums}
             popd
         done
     - name: List checksums
