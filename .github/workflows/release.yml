@@ -74,13 +74,23 @@ jobs:
 
     - name: Create checksums
       run: |
-        ls -R 
         tree 
+    - name: Create checksums
+      run: |
         cd artifacts
-        for file in *.tar.gz *.zip; do
-          sha256sum $file >> checksums.txt
+        for dir in immich-go-*; do
+          if [ -d "$dir" ]; then
+            cd "$dir"
+            for file in *.tar.gz *.zip; do
+              sha256sum "$file" >> /artifacts/checksums.txt
+            done
+            cd ..
+          fi
         done
-
+    - name: Create checksums
+      run: |
+        cat /artifacts/checksums.txt
+  
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
