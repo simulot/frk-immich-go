@@ -108,42 +108,27 @@ jobs:
 
     - name: Create Release
       id: create_release
-      uses: actions/create-release@v1
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.event.inputs.tag || github.ref }}
-        release_name: Release ${{ env.TAG_VERSION }}
-        draft: false
-        prerelease: false
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release create ${{ env.TAG_VERSION }} \
+            --title "Release ${{ env.TAG_NAME }}" \
+            --generate-notes
+            --draft
+        gh release upload ${{ env.TAG_VERSION }} ./artifacts/checksums.txt#checksums.txt --clobber
 
-    - name: Upload Release Assets
-      uses: actions/upload-release-asset@v1
+    - name: Upload Release Assets non windows
+      if: ${{matrix.goos}} != 'windows'
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./artifacts/checksums.txt
-        asset_name: checksums.txt
-        asset_content_type: text/plain
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release upload ${{ env.TAG_VERSION }} ./artifacts/immich-go-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz --clobber
 
-    - name: Upload Release Assets
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./artifacts/immich-go-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
-        asset_name: immich-go-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
-        asset_content_type: application/gzip
 
-    - name: Upload Release Assets (Windows)
-      if: matrix.goos == 'windows'
-      uses: actions/upload-release-asset@v1
+    - name: Upload Release Assets non windows
+      if: ${{matrix.goos}} == 'windows'
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./artifacts/immich-go-${{ matrix.goos }}-${{ matrix.goarch }}.zip
-        asset_name: immich-go-${{ matrix.goos }}-${{ matrix.goarch }}.zip
-        asset_content_type: application/zip
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release upload ${{ env.TAG_VERSION }} ./artifacts/immich-go-${{ matrix.goos }}-${{ matrix.goarch }}.zip --clobber
+  
