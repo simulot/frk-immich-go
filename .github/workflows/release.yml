@@ -12,7 +12,7 @@ on:
       tag:
         description: 'Tag to release'
         required: true
-        default: 'refs/tags/v0.23'
+        default: 'v0.23'
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -28,10 +28,22 @@ jobs:
           - goos: windows
             goarch: arm
     steps:
+    - name: Set tag reference from input
+      if: github.event.inputs.tag != ''
+      run: |
+        echo "TAG_REF=refs/tags/${{ github.event.inputs.tag}}" >> $GITHUB_ENV
+        echo "TAG_VERSION=${{ github.event.inputs.tag }}" >> $GITHUB_ENV
+
+    - name: Set tag reference from github.ref
+      if: github.event.inputs.tag == ''
+      run: | 
+        echo "TAG_REF=${{ github.ref }}" >> $GITHUB_ENV
+        echo "TAG_VERSION=${TAG_REF#refs/tags/}" >> $GITHUB_ENV
+    
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        ref: ${{ github.event.inputs.tag || github.ref }}
+        ref: ${{ env.TAG_REF }}
 
     - name: Get the current commit
       id: get_commit
@@ -93,7 +105,7 @@ jobs:
     - name: List checksums
       run: |
         cat checksums.txt
-  
+
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -101,7 +113,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ github.event.inputs.tag || github.ref }}
-        release_name: Release ${{ (github.event.inputs.tag || github.ref).replace('refs/tags/', '') }}
+        release_name: Release ${{ env.TAG_VERSION }}
         draft: false
         prerelease: false
 
