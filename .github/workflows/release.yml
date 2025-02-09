@@ -15,8 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        goos: [linux, windows, darwin]
-        goarch: [amd64, arm64, arm]
+        # goos: [linux, windows, darwin, freebsd]
+        goos: [linux]
+        goarch: [amd64, arm64]
+        # goarch: [amd64, arm64, arm]
         exclude:
           - goos: darwin
             goarch: arm
@@ -73,6 +75,7 @@ jobs:
     - name: Create checksums
       run: |
         ls -R 
+        tree 
         cd artifacts
         for file in *.tar.gz *.zip; do
           sha256sum $file >> checksums.txt
