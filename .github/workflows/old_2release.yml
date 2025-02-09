@@ -1,4 +1,4 @@
-name: Build and Release
+name: ZZ Build and Release OLD 
 
 permissions:
   contents: write
@@ -12,7 +12,7 @@ on:
       tag:
         description: 'Tag to release'
         required: true
-        default: 'refs/tags/v0.23'
+        default: 'v0.23'
 jobs:
   build:
     runs-on: ubuntu-latest
