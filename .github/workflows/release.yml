@@ -12,15 +12,15 @@ on:
       tag:
         description: 'Tag to release'
         required: true
-        default: 'v1.0.0'
+        default: 'v0.23'
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         # goos: [linux, windows, darwin, freebsd]
-        goos: [linux]
-        goarch: [amd64, arm64]
+        goos: [linux,windows]
+        goarch: [amd64]
         # goarch: [amd64, arm64, arm]
         exclude:
           - goos: darwin
@@ -30,13 +30,9 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.inputs.tag || github.ref }}
 
-    - name: Get latest tag
-      id: get_latest_tag
-      run: echo "LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)" >> $GITHUB_OUTPUT
-
-    - name: Checkout code for latest tag
-      run: git checkout $LATEST_TAG
 
     - name: Get the current commit
       id: get_commit
@@ -105,8 +101,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
+        tag_name: ${{ github.event.inputs.tag || github.ref }}
+        release_name: Release ${{ github.event.inputs.tag || github.ref }}
         draft: false
         prerelease: false
 
