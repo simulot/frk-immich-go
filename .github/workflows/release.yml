@@ -31,7 +31,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        ref: refs/tags/${{ github.event.inputs.tag || github.ref }}
+        ref: ${{ github.event.inputs.tag || github.ref }}
 
     - name: Get the current commit
       id: get_commit
