@@ -84,10 +84,6 @@ jobs:
         path: |
           ${{ matrix.goos == 'windows' && format('immich-go-{0}-{1}.zip', matrix.goos, matrix.goarch) || format('immich-go-{0}-{1}.tar.gz', matrix.goos, matrix.goarch) }}
 
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
 
     - name: Set tag reference from input
       if: github.event.inputs.tag != ''
