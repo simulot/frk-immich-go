@@ -25,7 +25,7 @@ builds:
     flags:
       - -trimpath
     ldflags:
-    - '-s -w "-extldflags=-static" -X version.Version={{.Version}} -X version.Commit={{.Commit}} -X Version.Date={{.Date}} -X main.builtBy=goreleaser'
+    - '-s -w "-extldflags=-static" -X app.Version={{.Version}} -X app.Commit={{.Commit}} -X app.Date={{.Date}} -X main.builtBy=goreleaser'
 
 archives:
   - formats: ['tar.gz']
