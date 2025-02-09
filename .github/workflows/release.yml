@@ -35,11 +35,7 @@ jobs:
 
     - name: Build
       run: |
-        go build -o immich-go-${{ matrix.goos }}-${{ matrix.goarch }}
-      env:
-        CGO_ENABLED: 0
-        GOOS: ${{ matrix.goos }} 
-        GOARCH: ${{ matrix.goarch }} 
+        GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} CGO_ENABLED=0 go build -o immich-go-${{ matrix.goos }}-${{ matrix.goarch }}
 
     - name: Set exec flag for Linux
       if: matrix.goos != 'windows'
@@ -79,19 +75,12 @@ jobs:
     - name: Create checksums
       run: |
         pwd
-        cd artifacts
-        for dir in immich-go-*; do
-          if [ -d "$dir" ]; then
-            cd "$dir"
-            for file in *.tar.gz *.zip; do
-              sha256sum "$file" >> /artifacts/checksums.txt
-            done
-            cd ..
-          fi
+        for dir in artifacts/immich-go*/*; do
+            sha256sum "$file" >> checksums.txt
         done
     - name: Create checksums
       run: |
-        cat /artifacts/checksums.txt
+        cat checksums.txt
   
     - name: Create Release
       id: create_release
