@@ -76,7 +76,7 @@ jobs:
       run: |
         pwd
         for dir in artifacts/immich-go*/*; do
-            sha256sum "$file" >> checksums.txt
+            sha256sum "$dir" >> checksums.txt
         done
     - name: Create checksums
       run: |
