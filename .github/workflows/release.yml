@@ -72,6 +72,7 @@ jobs:
 
     - name: Create checksums
       run: |
+        ls -R 
         cd artifacts
         for file in *.tar.gz *.zip; do
           sha256sum $file >> checksums.txt
