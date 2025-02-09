@@ -73,9 +73,11 @@ jobs:
 
     - name: Create checksums
       run: |
-        pwd
-        for dir in artifacts/immich-go*/*; do
-            sha256sum "${dir##*/}" >> checksums.txt
+        set checksums=$(pwd)/checksums.txt
+        for dir in artifacts/immich-go*; do
+            pushd $dir
+            md5sum *  >> $checksums
+            popd
         done
     - name: List checksums
       run: |
