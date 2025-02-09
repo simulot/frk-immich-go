@@ -121,9 +121,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         gh release create ${{ env.TAG_VERSION }} \
-            --title "Release ${{ env.TAG_NAME }}" \
-            --generate-notes
-            --draft
+            --title "Release ${{ env.TAG_VERSION }}" \
+            --generate-notes \
+            --draft \
         gh release upload ${{ env.TAG_VERSION }} ./artifacts/checksums.txt#checksums.txt --clobber
 
     - name: Upload Release Assets non windows
