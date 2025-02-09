@@ -16,12 +16,12 @@ jobs:
     strategy:
       matrix:
         goos: [linux, windows, darwin]
-        goarch: [amd64, arm64]
+        goarch: [amd64, arm64, arm]
         exclude:
           - goos: darwin
-            goarch: arm64
+            goarch: arm
           - goos: windows
-            goarch: arm64
+            goarch: arm
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -40,8 +40,8 @@ jobs:
         GOARCH: ${{ matrix.goarch }} 
 
     - name: Set exec flag for Linux
-      if: matrix.goos == 'linux'
-      run: chmod +x immich-go-linux-amd64
+      if: matrix.goos != 'windows'
+      run: chmod +x immich-go-${{ matrix.goos }}-${{ matrix.goarch }}
 
     - name: Create archive
       run: |
