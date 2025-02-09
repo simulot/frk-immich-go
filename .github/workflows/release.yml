@@ -1,67 +1,115 @@
-name: Release Pipeline
+name: Build and Release
 
 on:
   push:
-    tags: ["**"]
-
-permissions:
-  contents: write
+    tags:
+      - 'v*'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [linux, windows, darwin, freebsd]
-        arch: [amd64, arm64, arm]
+        goos: [linux, windows, darwin]
+        goarch: [amd64, arm64]
         exclude:
-          - os: darwin
-            arch: arm
-          - os: windows
-            arch: arm
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: arm64
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: 'go.mod'
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: 'go.mod'
 
-      - name: Get the current commit
-        id: get_commit
-        run: echo "commit=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+    - name: Build
+      run: |
+        go build -o immich-go-${{ matrix.goos }}-${{ matrix.goarch }}
+      env:
+        CGO_ENABLED: 0
+        GOOS: ${{ matrix.goos }} 
+        GOARCH: ${{ matrix.goarch }} 
 
-      - name: Get the current date
-        id: get_date
-        run: echo "date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+    - name: Set exec flag for Linux
+      if: matrix.goos == 'linux'
+      run: chmod +x immich-go-linux-amd64
 
-      - name: Build binary
-        run: |
-          VERSION=${{ github.ref_name }}
-          COMMIT=${{ steps.get_commit.outputs.commit }}
-          DATE=${{ steps.get_date.outputs.date }}
-          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} CGO_ENABLED=0 go build -o immich-go-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.os == 'windows' && '.exe' || '' }} -ldflags="-s -w -extldflags=-static -X version.Version=$VERSION -X version.Commit=$COMMIT -X version.Date=$DATE" main.go
+    - name: Create archive
+      run: |
+        mkdir -p dist/immich-go-${{ matrix.goos }}-${{ matrix.goarch }}
+        cp immich-go-${{ matrix.goos }}-${{ matrix.goarch }} dist/immich-go-${{ matrix.goos }}-${{ matrix.goarch }}/immich-go${{ matrix.goos == 'windows' && '.exe' || '' }}
+        cp README.md dist/immich-go-${{ matrix.goos }}-${{ matrix.goarch }}/
+        if [ "${{ matrix.goos }}" == "windows" ]; then
+          zip -r immich-go-${{ matrix.goos }}-${{ matrix.goarch }}.zip dist/immich-go-${{ matrix.goos }}-${{ matrix.goarch }}
+        else
+          tar -czvf immich-go-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz -C dist immich-go-${{ matrix.goos }}-${{ matrix.goarch }}
+        fi
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.os }}-${{ matrix.arch}}
-          path: "./immich-go-*"
-          if-no-files-found: error
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: immich-go-${{ matrix.goos }}-${{ matrix.goarch }}
+        path: |
+          ${{ matrix.goos == 'windows' && format('immich-go-{0}-{1}.zip', matrix.goos, matrix.goarch) || format('immich-go-{0}-{1}.tar.gz', matrix.goos, matrix.goarch) }}
 
   release:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: "./artifacts"
-  
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: "./artifacts/**"
-          draft: false
-          prerelease: false
+    - name: Download artifacts
+      uses: actions/download-artifact@v2
+      with:
+        path: artifacts
+
+    - name: Create checksums
+      run: |
+        cd artifacts
+        for file in *.tar.gz *.zip; do
+          sha256sum $file >> checksums.txt
+        done
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Assets
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./artifacts/checksums.txt
+        asset_name: checksums.txt
+        asset_content_type: text/plain
+
+    - name: Upload Release Assets
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./artifacts/immich-go-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+        asset_name: immich-go-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+        asset_content_type: application/gzip
+
+    - name: Upload Release Assets (Windows)
+      if: matrix.goos == 'windows'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./artifacts/immich-go-${{ matrix.goos }}-${{ matrix.goarch }}.zip
+        asset_name: immich-go-${{ matrix.goos }}-${{ matrix.goarch }}.zip
+        asset_content_type: application/zip
