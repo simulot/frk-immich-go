@@ -1,4 +1,4 @@
-name: ZZ Build and Release OLD 
+name: Build and Release
 
 permissions:
   contents: write
@@ -28,10 +28,22 @@ jobs:
           - goos: windows
             goarch: arm
     steps:
+    - name: Set tag reference from input
+      if: github.event.inputs.tag != ''
+      run: |
+        echo "TAG_REF=refs/tags/${{ github.event.inputs.tag}}" >> $GITHUB_ENV
+        echo "TAG_VERSION=${{ github.event.inputs.tag }}" >> $GITHUB_ENV
+
+    - name: Set tag reference from github.ref
+      if: github.event.inputs.tag == ''
+      run: | 
+        echo "TAG_REF=${{ github.ref }}" >> $GITHUB_ENV
+        echo "TAG_VERSION=${TAG_REF#refs/tags/}" >> $GITHUB_ENV
+    
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        ref: refs/tags/${{ github.event.inputs.tag || github.ref }}
+        ref: ${{ env.TAG_REF }}
 
     - name: Get the current commit
       id: get_commit
@@ -72,10 +84,19 @@ jobs:
         path: |
           ${{ matrix.goos == 'windows' && format('immich-go-{0}-{1}.zip', matrix.goos, matrix.goarch) || format('immich-go-{0}-{1}.tar.gz', matrix.goos, matrix.goarch) }}
 
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
+
+    - name: Set tag reference from input
+      if: github.event.inputs.tag != ''
+      run: |
+        echo "TAG_REF=refs/tags/${{ github.event.inputs.tag}}" >> $GITHUB_ENV
+        echo "TAG_VERSION=${{ github.event.inputs.tag }}" >> $GITHUB_ENV
+
+    - name: Set tag reference from github.ref
+      if: github.event.inputs.tag == ''
+      run: | 
+        echo "TAG_REF=${{ github.ref }}" >> $GITHUB_ENV
+        echo "TAG_VERSION=${TAG_REF#refs/tags/}" >> $GITHUB_ENV
+    
     - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
@@ -83,55 +104,47 @@ jobs:
 
     - name: Create checksums
       run: |
-        checkfile=$(pwd)/checksums.txt
-        echo checkfile = $checksums 
+        checksums=$(pwd)/checksums.txt
+        echo checksums = ${checksums} 
         for dir in artifacts/immich-go*; do
             pushd $dir
-            md5sum *  >> ${checkfile}
+            md5sum *  >> ${checksums}
             popd
         done
     - name: List checksums
       run: |
         cat checksums.txt
-  
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     - name: Create Release
       id: create_release
-      uses: actions/create-release@v1
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.event.inputs.tag || github.ref }}
-        release_name: Release ${{ github.event.inputs.tag || github.ref }}
-        draft: false
-        prerelease: false
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release create ${{ env.TAG_VERSION }} \
+            --title "Release ${{ env.TAG_VERSION }}" \
+            --generate-notes \
+            --draft \
+        gh release upload ${{ env.TAG_VERSION }} ./artifacts/checksums.txt#checksums.txt --clobber
 
-    - name: Upload Release Assets
-      uses: actions/upload-release-asset@v1
+    - name: Upload Release Assets non windows
+      if: ${{matrix.goos}} != 'windows'
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./artifacts/checksums.txt
-        asset_name: checksums.txt
-        asset_content_type: text/plain
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release upload ${{ env.TAG_VERSION }} ./artifacts/immich-go-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz --clobber
 
-    - name: Upload Release Assets
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./artifacts/immich-go-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
-        asset_name: immich-go-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
-        asset_content_type: application/gzip
 
-    - name: Upload Release Assets (Windows)
-      if: matrix.goos == 'windows'
-      uses: actions/upload-release-asset@v1
+    - name: Upload Release Assets non windows
+      if: ${{matrix.goos}} == 'windows'
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./artifacts/immich-go-${{ matrix.goos }}-${{ matrix.goarch }}.zip
-        asset_name: immich-go-${{ matrix.goos }}-${{ matrix.goarch }}.zip
-        asset_content_type: application/zip
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release upload ${{ env.TAG_VERSION }} ./artifacts/immich-go-${{ matrix.goos }}-${{ matrix.goarch }}.zip --clobber
+  
