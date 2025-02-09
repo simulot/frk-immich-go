@@ -28,9 +28,15 @@ jobs:
           - goos: windows
             goarch: arm
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
     - name: Get latest tag
       id: get_latest_tag
       run: echo "LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)" >> $GITHUB_OUTPUT
+
+    - name: Checkout code for latest tag
+      run: git checkout ${{ steps.get_latest_tag.outputs.LATEST_TAG }}
 
     - name: Get the current commit
       id: get_commit
@@ -39,11 +45,6 @@ jobs:
     - name: Get the current date
       id: get_date
       run: echo "DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
-
-    - name: Checkout code
-      uses: actions/checkout@v2
-      with:
-        ref: $LATEST_TAG
 
     - name: Set up Go
       uses: actions/setup-go@v5
