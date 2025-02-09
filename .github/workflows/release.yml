@@ -74,9 +74,11 @@ jobs:
 
     - name: Create checksums
       run: |
+        pwd
         tree 
     - name: Create checksums
       run: |
+        pwd
         cd artifacts
         for dir in immich-go-*; do
           if [ -d "$dir" ]; then
