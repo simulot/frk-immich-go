@@ -11,4 +11,6 @@ jobs:
         run: |
           cat $GITHUB_EVENT_PATH
       - name: Log github.event
-        run: echo "${{ toJSON(github.event) }}"          
+        run: echo "${{ toJSON(github.event) }}"   
+      - name: Show the ref
+        run: echo "${{ github.event.ref }}"
