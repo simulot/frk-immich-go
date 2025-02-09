@@ -36,7 +36,7 @@ jobs:
       run: echo "LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)" >> $GITHUB_OUTPUT
 
     - name: Checkout code for latest tag
-      run: git checkout ${{ steps.get_latest_tag.outputs.LATEST_TAG }}
+      run: git checkout $LATEST_TAG
 
     - name: Get the current commit
       id: get_commit
