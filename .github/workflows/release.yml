@@ -1,5 +1,8 @@
 name: Build and Release
 
+permissions:
+  contents: write
+
 on:
   push:
     tags:
@@ -71,14 +74,10 @@ jobs:
     - name: Create checksums
       run: |
         pwd
-        tree 
-    - name: Create checksums
-      run: |
-        pwd
         for dir in artifacts/immich-go*/*; do
-            sha256sum "$dir" >> checksums.txt
+            sha256sum "${dir##*/}" >> checksums.txt
         done
-    - name: Create checksums
+    - name: List checksums
       run: |
         cat checksums.txt
   
