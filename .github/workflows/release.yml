@@ -42,7 +42,7 @@ jobs:
       run: |
         mkdir -p dist/immich-go-${{ matrix.goos }}-${{ matrix.goarch }}
         cp immich-go-${{ matrix.goos }}-${{ matrix.goarch }} dist/immich-go-${{ matrix.goos }}-${{ matrix.goarch }}/immich-go${{ matrix.goos == 'windows' && '.exe' || '' }}
-        cp README.md dist/immich-go-${{ matrix.goos }}-${{ matrix.goarch }}/
+        cp readme.md dist/immich-go-${{ matrix.goos }}-${{ matrix.goarch }}/
         if [ "${{ matrix.goos }}" == "windows" ]; then
           zip -r immich-go-${{ matrix.goos }}-${{ matrix.goarch }}.zip dist/immich-go-${{ matrix.goos }}-${{ matrix.goarch }}
         else
