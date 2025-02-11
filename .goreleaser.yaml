@@ -18,14 +18,14 @@ builds:
       - windows
       - darwin
       - freebsd
-    goarch:
+    goarch: 
       - amd64
       - arm
       - arm64      
     flags:
       - -trimpath
     ldflags:
-    - '-s -w "-extldflags=-static" -X app.Version={{.Version}} -X app.Commit={{.Commit}} -X app.Date={{.Date}} -X main.builtBy=goreleaser'
+      - -extldflags=-static -X github.com/simulot/immich-go/app.Version={{.Version}} -X github.com/simulot/immich-go/Commit={{.Commit}} -X github.com/simulot/immich-go/Date={{.Date}} -s -w
 
 archives:
   - formats: ['tar.gz']
